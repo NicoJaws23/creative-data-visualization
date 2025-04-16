@@ -1,23 +1,18 @@
 #Data visualizations code
-library(seewave)
-library(tuneR)
+library(adehabitatHR)
+library(leaflet)
+library(mapview)
 library(ggplot2)
 library(tidyverse)
+library(sf)
 
-voc <- readWave("C:\\Users\\Jawor\\Desktop\\repos\\creative-data-visualization\\VCH_ex_June17_MZ10.wav")
+f <- "https://raw.githubusercontent.com/NicoJaws23/creative-data-visualization/refs/heads/main/LagoDAllDistCombined_data.csv"
+d <- read_csv(f, col_names = TRUE)
 
-seewave::duration(voc)
+d$mean_ltime <- as.POSIXct(d$mean_ltime, format = "%Y-%m-%d %H:%M:%S", tz = "UTC")
 
-seewave::spectro(voc, 
-                 f = voc@samp.rate, 
-                 main = "Basic Spectrogram", 
-                 flim = c(0, 0.5), 
-                 tlim = c(5.3, 6))
+d_sf <- st_as_sf(d, coords = c("mean_longitude", "mean_latitude"), crs = 4326)
 
-voc2 <- readWave("C:\\Users\\Jawor\\Desktop\\repos\\creative-data-visualization\\VTR_ex_June17_MZ24.wav")
-seewave::duration(voc2)
-spectro(voc2, 
-        f = voc@samp.rate, 
-        main = "Basic Spectrogram", 
-        flim = c(0, .85), 
-        tlim = c(9, 12.5))
+gps_proj <- st_transform(d_sf, crs = 32718)
+
+gps_proj$year <- year(gps_proj$mean_ltime)
