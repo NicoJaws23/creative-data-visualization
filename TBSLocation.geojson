@@ -1,0 +1,8 @@
+{
+"type": "FeatureCollection",
+"name": "TBSLocation",
+"crs": { "type": "name", "properties": { "name": "urn:ogc:def:crs:EPSG::32718" } },
+"features": [
+{ "type": "Feature", "properties": { "id": 1 }, "geometry": { "type": "Point", "coordinates": [ 372051.944210990797728, 9929617.74191808886826 ] } }
+]
+}
