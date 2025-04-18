@@ -1,4 +1,10 @@
-#Data visualizations code
+---
+title: "dataViz"
+format: html
+editor: visual
+---
+
+```{r}
 library(adehabitatHR)
 library(leaflet)
 library(mapview)
@@ -33,17 +39,9 @@ hr_sf <- st_as_sf(hr)
 hr_sf$year <- rownames(hr@data)
 plot(hr_sf["2014", 4])
 
-mapviewOptions(default = FALSE)
-trails <- st_read("C:\\Users\\Jawor\\Desktop\\repos\\creative-data-visualization\\TBS_Trails.geojson")
-river <- st_read("C:\\Users\\Jawor\\Desktop\\repos\\creative-data-visualization\\rio_tiputini.geojson")
-trail_layer <- mapview(trails, color = "orange", layer.name = "Trail", lwd = 2)
-river_layer <- mapview(river, color = "blue", layer.name = "River", lwd = 2)
-
-d14 + trail_layer + river_layer
-
 (d14 <- mapview(hr_sf["2014",], zcol = "year", layer.name = "Home Range", alpha.regions = 0.4))
 (d15 <- mapview(hr_sf["2015",], zcol = "year", layer.name = "Home Range", alpha.regions = 0.4))
 (d16 <- mapview(hr_sf["2016",], zcol = "year", layer.name = "Home Range", alpha.regions = 0.4))
 (d17 <- mapview(hr_sf["2017",], zcol = "year", layer.name = "Home Range", alpha.regions = 0.4))
 (d18 <- mapview(hr_sf["2018",], zcol = "year", layer.name = "Home Range", alpha.regions = 0.4))
-
+```
