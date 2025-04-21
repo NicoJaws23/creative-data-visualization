@@ -5,45 +5,53 @@ library(mapview)
 library(ggplot2)
 library(tidyverse)
 library(sf)
+library(lubridate)
 library(tmap)
 
 f <- "https://raw.githubusercontent.com/NicoJaws23/creative-data-visualization/refs/heads/main/LagoDAllDistCombined_data.csv"
 d <- read_csv(f, col_names = TRUE)
 
-d$mean_ltime <- as.POSIXct(d$mean_ltime, format = "%Y-%m-%d %H:%M:%S", tz = "UTC")
+trails <- st_read("C:\\Users\\Jawor\\Desktop\\repos\\creative-data-visualization\\TBS_Trails.geojson") |>
+  st_transform(32718)
+river <- st_read("C:\\Users\\Jawor\\Desktop\\repos\\creative-data-visualization\\rio_tiputini.geojson") |>
+  st_transform(32718)
 
 d <- d |>
-  select(mean_ltime, mean_x_proj, mean_y_proj, mean_alt) |>
-  mutate(year = year(mean_ltime))
+  mutate(mean_ltime = as.POSIXct(mean_ltime, format = "%Y-%m-%d %H:%M:%S", tz = "UTC"),
+         year = year(mean_ltime)) |>
+  select(mean_ltime, mean_x_proj, mean_y_proj, year, mean_alt)
 
-sf <- st_as_sf(d, coords = c("mean_x_proj", "mean_y_proj"), crs = 32718)
+pts <- st_as_sf(d, coords = c("mean_x_proj", "mean_y_proj"), crs = 32718)
+pts$year <- as.factor(pts$year)
+pts_sp <- as(pts, "Spatial")
+proj4string(pts_sp) <- CRS("+proj=utm +zone=18 +south +datum=WGS84 +units=m +no_defs")
 
-sf <- sf |>
-  mutate(year = as.factor(year))
+# Convert to a simpler SpatialPoints object if necessary
+pts_simple <- SpatialPoints(pts_sp@coords, proj4string = CRS("+proj=utm +zone=18 +south +datum=WGS84"))
 
-sp <- as(sf, "Spatial")
+# Run kernelUD() on the simpler object
+khr <- kernelUD(pts_simple, h = "href")
 
-spdf <- SpatialPointsDataFrame(coordinates(sp), data = data.frame(year = sf$year))
 
-kud <- kernelUD(spdf, h = "href", grid = 1000)  # h can be tuned
-
-hr <- getverticeshr(kud, percent = 95)
-
+hr <- getverticeshr(khr, percent = 95)
 hr_sf <- st_as_sf(hr)
-hr_sf$year <- rownames(hr@data)
-plot(hr_sf["2014", 4])
+hr_sf$year <- as.factor(row.names(hr))
 
-mapviewOptions(default = FALSE)
-trails <- st_read("C:\\Users\\Jawor\\Desktop\\repos\\creative-data-visualization\\TBS_Trails.geojson")
-river <- st_read("C:\\Users\\Jawor\\Desktop\\repos\\creative-data-visualization\\rio_tiputini.geojson")
-trail_layer <- mapview(trails, color = "orange", layer.name = "Trail", lwd = 2)
-river_layer <- mapview(river, color = "blue", layer.name = "River", lwd = 2)
+unique(hr_sf$year)
+str(hr_sf$year)
 
-d14 + trail_layer + river_layer
+mapviewOptions(basemaps = "Esri.WorldImagery")
 
-(d14 <- mapview(hr_sf["2014",], zcol = "year", layer.name = "Home Range", alpha.regions = 0.4))
-(d15 <- mapview(hr_sf["2015",], zcol = "year", layer.name = "Home Range", alpha.regions = 0.4))
-(d16 <- mapview(hr_sf["2016",], zcol = "year", layer.name = "Home Range", alpha.regions = 0.4))
-(d17 <- mapview(hr_sf["2017",], zcol = "year", layer.name = "Home Range", alpha.regions = 0.4))
-(d18 <- mapview(hr_sf["2018",], zcol = "year", layer.name = "Home Range", alpha.regions = 0.4))
+map_list <- lapply(levels(hr_sf$year), function(y) {
+  hr_layer <- mapview(hr_sf[hr_sf$year == y, ], zcol = "year", alpha.regions = 0.4, layer.name = paste("Home Range", y))
+  trail_layer <- mapview(trails, color = "orange", layer.name = "Trails", lwd = 2)
+  river_layer <- mapview(river, color = "blue", layer.name = "River", lwd = 2)
+  
+  hr_layer + trail_layer + river_layer
+})
+
+map_list[[3]]
+# Extract the year from the original data (assuming 'mean_ltime' contains the datetime information)
+hr_sf$year <- as.factor(format(pts_sp$mean_ltime, "%Y"))
+
 
