@@ -5,43 +5,61 @@ editor: visual
 ---
 
 ```{r}
+#| message: false
+#| warning: false
 library(adehabitatHR)
 library(leaflet)
+library(leafsync)
 library(mapview)
 library(ggplot2)
 library(tidyverse)
 library(sf)
+library(lubridate)
 library(tmap)
 
 f <- "https://raw.githubusercontent.com/NicoJaws23/creative-data-visualization/refs/heads/main/LagoDAllDistCombined_data.csv"
 d <- read_csv(f, col_names = TRUE)
 
-d$mean_ltime <- as.POSIXct(d$mean_ltime, format = "%Y-%m-%d %H:%M:%S", tz = "UTC")
+trails <- st_read("C:\\Users\\Jawor\\Desktop\\repos\\creative-data-visualization\\TBS_Trails.geojson") |>
+  st_transform(32718)
+river <- st_read("C:\\Users\\Jawor\\Desktop\\repos\\creative-data-visualization\\rio_tiputini.geojson") |>
+  st_transform(32718)
 
 d <- d |>
-  select(mean_ltime, mean_x_proj, mean_y_proj, mean_alt) |>
-  mutate(year = year(mean_ltime))
+  mutate(mean_ltime = as.POSIXct(mean_ltime, format = "%Y-%m-%d %H:%M:%S", tz = "UTC"),
+         year = year(mean_ltime)) |>
+  select(mean_ltime, mean_x_proj, mean_y_proj, year, mean_alt)
 
-sf <- st_as_sf(d, coords = c("mean_x_proj", "mean_y_proj"), crs = 32718)
+d14 <- d |>
+  filter(year == 2014)
+d15 <- d |>
+  filter(year == 2015)
+d16 <- d |>
+  filter(year == 2016)
+d17 <- d |>
+  filter(year == 2017)
+d18 <- d |>
+  filter(year == 2018)
+viewHR <- function(df, trailsDF, riverDF, year, HRcolor){
+  pts <- st_as_sf(df, coords = c("mean_x_proj", "mean_y_proj"), crs = 32718)
+  pts_sp <- as(pts, "Spatial")
+  proj4string(pts_sp) <- CRS("+proj=utm +zone=18 +south +datum=WGS84 +units=m +no_defs")
+  pts_simple <- SpatialPoints(pts_sp@coords, proj4string = CRS("+proj=utm +zone=18 +south +datum=WGS84"))
+  khr <- kernelUD(pts_simple, h = "href")
+  hr <- getverticeshr(khr, percent = 95)
+  hr_sf <- st_as_sf(hr)
+  hr_layer <- mapview(hr_sf, col.regions = HRcolor, color = HRcolor, alpha.regions = 0.4, layer.name = paste(year, "Home Range"))
+  trail_layer <- mapview(trailsDF, color = "orange", layer.name = "Trails", lwd = 2)
+  river_layer <- mapview(riverDF, color = "blue", layer.name = "River", lwd = 2)
+  map <- hr_layer + trail_layer + river_layer
+  return(map)
+}
+hr14 <- viewHR(d14, trails, river, 2014, "green4")
+hr15 <- viewHR(d15, trails, river, 2015, "green4")
+hr16 <- viewHR(d16, trails, river, 2016, "green4")
+hr17 <- viewHR(d17, trails, river, 2017, "green4")
+hr18 <- viewHR(d18, trails, river, 2018, "green4")
+hrFull <- viewHR(d, trails, river, "All Time", "green4")
+sync(hr14, hr15, hr16, hr17, hr18, ncol = 1)
 
-sf <- sf |>
-  mutate(year = as.factor(year))
-
-sp <- as(sf, "Spatial")
-
-spdf <- SpatialPointsDataFrame(coordinates(sp), data = data.frame(year = sf$year))
-
-kud <- kernelUD(spdf, h = "href", grid = 1000)  # h can be tuned
-
-hr <- getverticeshr(kud, percent = 95)
-
-hr_sf <- st_as_sf(hr)
-hr_sf$year <- rownames(hr@data)
-plot(hr_sf["2014", 4])
-
-(d14 <- mapview(hr_sf["2014",], zcol = "year", layer.name = "Home Range", alpha.regions = 0.4))
-(d15 <- mapview(hr_sf["2015",], zcol = "year", layer.name = "Home Range", alpha.regions = 0.4))
-(d16 <- mapview(hr_sf["2016",], zcol = "year", layer.name = "Home Range", alpha.regions = 0.4))
-(d17 <- mapview(hr_sf["2017",], zcol = "year", layer.name = "Home Range", alpha.regions = 0.4))
-(d18 <- mapview(hr_sf["2018",], zcol = "year", layer.name = "Home Range", alpha.regions = 0.4))
 ```
