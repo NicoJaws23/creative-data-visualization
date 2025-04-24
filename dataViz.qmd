@@ -2,33 +2,40 @@
 title: "dataViz"
 format: html
 editor: visual
+toc: true
 ---
+
+# Interactive View of Woolly Monkey Home Ranges
+
+For my data visualization project I used location data from Lagothrix Group D at the Tiputini Biodiversity Station to measure yearly changes in the group's homerange. Additionally, I added elevation layers based on point data and also location density of the group over the years 2014-2018.
+
+## Data Wrangling
+
+First I loaded in the necessary packages and data. For data, I needed the list of geographical points collected by field researchers studying this group of woolly monkeys. Additionally, I loaded in GeoJSON files which contained the trail system of the Tiputini Biodiversity Station and the Rio Tiputini which borders the southern end of the station. I selected the necessary variables and creates new data-frames for each year.
 
 ```{r}
 #| message: false
 #| warning: false
 library(adehabitatHR)
-library(leaflet)
 library(leafsync)
 library(mapview)
-library(ggplot2)
 library(tidyverse)
 library(sf)
 library(lubridate)
-library(tmap)
+library(terra)
 
 f <- "https://raw.githubusercontent.com/NicoJaws23/creative-data-visualization/refs/heads/main/LagoDAllDistCombined_data.csv"
 d <- read_csv(f, col_names = TRUE)
 
-trails <- st_read("C:\\Users\\Jawor\\Desktop\\repos\\creative-data-visualization\\TBS_Trails.geojson") |>
+trails <- st_read("https://raw.githubusercontent.com/NicoJaws23/creative-data-visualization/refs/heads/main/TBS_Trails.geojson") |>
   st_transform(32718)
-river <- st_read("C:\\Users\\Jawor\\Desktop\\repos\\creative-data-visualization\\rio_tiputini.geojson") |>
+river <- st_read("https://raw.githubusercontent.com/NicoJaws23/creative-data-visualization/refs/heads/main/rio_tiputini.geojson") |>
   st_transform(32718)
 
 d <- d |>
   mutate(mean_ltime = as.POSIXct(mean_ltime, format = "%Y-%m-%d %H:%M:%S", tz = "UTC"),
          year = year(mean_ltime)) |>
-  select(mean_ltime, mean_x_proj, mean_y_proj, year, mean_alt)
+  dplyr::select(mean_ltime, mean_x_proj, mean_y_proj, year, mean_alt)
 
 d14 <- d |>
   filter(year == 2014)
@@ -40,7 +47,16 @@ d17 <- d |>
   filter(year == 2017)
 d18 <- d |>
   filter(year == 2018)
-viewHR <- function(df, trailsDF, riverDF, year, HRcolor){
+```
+
+## Displaying Homerange By Year
+
+I then calculated the homerange of group D for each year using kernel density estimation methods. I create a function to do this efficiently for each year. The function returns an interactive map and a spatial feature of the homerange which I will use later.
+
+```{r}
+#| message: false
+#| warning: false
+viewHR <- function(df, trailsDF, riverDF, year, HRcolor, elevation = c("Y", "N")){
   pts <- st_as_sf(df, coords = c("mean_x_proj", "mean_y_proj"), crs = 32718)
   pts_sp <- as(pts, "Spatial")
   proj4string(pts_sp) <- CRS("+proj=utm +zone=18 +south +datum=WGS84 +units=m +no_defs")
@@ -52,14 +68,45 @@ viewHR <- function(df, trailsDF, riverDF, year, HRcolor){
   trail_layer <- mapview(trailsDF, color = "orange", layer.name = "Trails", lwd = 2)
   river_layer <- mapview(riverDF, color = "blue", layer.name = "River", lwd = 2)
   map <- hr_layer + trail_layer + river_layer
-  return(map)
+  return(list(map = map, homerange = hr_sf))
 }
-hr14 <- viewHR(d14, trails, river, 2014, "green4")
-hr15 <- viewHR(d15, trails, river, 2015, "green4")
-hr16 <- viewHR(d16, trails, river, 2016, "green4")
-hr17 <- viewHR(d17, trails, river, 2017, "green4")
-hr18 <- viewHR(d18, trails, river, 2018, "green4")
-hrFull <- viewHR(d, trails, river, "All Time", "green4")
-sync(hr14, hr15, hr16, hr17, hr18, ncol = 1)
 
+hr14 <- viewHR(d14, trails, river, 2014, "tan4")
+hr14$map
+hr15 <- viewHR(d15, trails, river, 2015, "tan4")
+hr15$map
+hr16 <- viewHR(d16, trails, river, 2016, "tan4")
+hr16$map
+hr17 <- viewHR(d17, trails, river, 2017, "tan4")
+hr17$map
+hr18 <- viewHR(d18, trails, river, 2018, "tan4")
+hr18$map
 ```
+
+## Adding Elevation
+
+Next, I calculated the elevation of the homerange. I first created a grid to act as the raster. The grid's resolution can be changed should a user use it, but I set it to 150 for this project. The function need the data-frame holding the elevation data, the map and homerange fature created in the previous function, and the desired resolution. The homerange feature will be used to clip the raster down so only grid squares within the homerange are visualized.
+
+```{r}
+#| message: false
+#| warning: false
+elev <- function(df, map, hr, res){
+ points <- vect(df, geom = c("mean_x_proj", "mean_y_proj"), crs = "EPSG:32718")
+  grid <- rast(ext(points), resolution = res, crs = "EPSG:32718")
+  elevation_raster <- rasterize(points, grid, field = "mean_alt", fun = mean, na.rm = TRUE)
+  hr_vect <- vect(hr)
+  elevation_raster <- mask(elevation_raster, hr_vect)
+
+  ev <- mapview(elevation_raster, layer.name = "Average Elevation in Meters", col.regions = terrain.colors(20), legend = TRUE, na.color = NA)
+  evMap <- map + ev
+  return(evMap)
+}
+
+(ev14 <- elev(d14, hr14$map, hr14$homerange, 150))
+(ev15 <- elev(d15, hr15$map, hr15$homerange, 150))
+(ev16 <- elev(d16, hr16$map, hr16$homerange, 150))
+(ev17 <- elev(d17, hr17$map, hr17$homerange, 150))
+(ev18 <- elev(d18, hr18$map, hr18$homerange, 150))
+```
+
+## Location Density
