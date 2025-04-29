@@ -121,6 +121,8 @@ ev18$evMap
 
 ## Elevation With Icons
 
+In an effort to add a different way to view elevation, I decided to view different raster cells as icons rather than shaded tiles. Trees are meant to represent elevations under 240 meters, hills are between 240 and 260 meters, and mountain are representing elevations over 260 for each year. The idea here was to visualize the shifts in elevation preferences of the woolly monkeys in their home range from year to year. I did this by creating a function using data produced in the earlier homerange and elevation functions and converting raster cell attributed to specific markers.
+
 ```{r}
 mountain <- makeIcon(iconUrl = "https://www.pngmart.com/files/23/Cartoon-Mountains-PNG-Isolated-HD.png", iconWidth = 20, iconHeight = 20)
 tree <- makeIcon(iconUrl = "https://img.pikbest.com/png-images/tree-clipart-cartoon-jungle-vector-green-big-tree_5856321.png!sw800", iconWidth = 20, iconHeight = 20)
@@ -154,3 +156,9 @@ evIcon <- function(evClipped, hr, icon1, icon2, icon3, trailsDF, riverDF, maxThr
 ```
 
 ## Location Density
+
+As a final method to visualize this data, I wanted to visualize point density across the home range from year to year. This follows a similar method to how I visualized elevation in each years homerange, except instead of trees, hills, and mountains, I used skyscrapers, houses, and tens to show the density of location points from each year. My thinking here was that higher point densities reflect where individual are spending most of there time and thus are more "populated", hence the use of these three icons
+
+```{r}
+
+```

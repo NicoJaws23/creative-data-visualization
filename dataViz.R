@@ -89,9 +89,9 @@ evIcon <- function(evClipped, hr, icon1, icon2, icon3, trailsDF, riverDF, maxThr
   evDF <- as.data.frame(evPoints, geom = "xy", na.rm = TRUE, cellvalues = TRUE)
   evDF <- evDF|>
     mutate(class = case_when(
-      evDF$mean >= maxThreshold ~ "mountain",
-      evDF$mean < maxThreshold & evDF$mean >= minThreshold ~ "hill",
-      evDF$mean < minThreshold ~ "tree"
+      mean >= maxThreshold ~ "mountain",
+      mean < maxThreshold & mean >= minThreshold ~ "hill",
+      mean < minThreshold ~ "tree"
     ))
   map <- leaflet() |>
     addProviderTiles(providers$Esri.WorldTopoMap) |>
@@ -109,3 +109,46 @@ evIcon <- function(evClipped, hr, icon1, icon2, icon3, trailsDF, riverDF, maxThr
 (i16 <- evIcon(ev16$evClip, hr16$homerange, icon1 = mountain, icon2 = hill, icon3 = tree, trails, river, maxThreshold = 260, minThreshold = 240))
 (i17 <- evIcon(ev17$evClip, hr17$homerange, icon1 = mountain, icon2 = hill, icon3 = tree, trails, river, maxThreshold = 260, minThreshold = 240))
 (i18 <- evIcon(ev18$evClip, hr18$homerange, icon1 = mountain, icon2 = hill, icon3 = tree, trails, river, maxThreshold = 260, minThreshold = 240))
+
+#Pont density visualization
+skyscraper <- makeIcon(iconUrl = "https://static.vecteezy.com/system/resources/previews/039/143/409/non_2x/skyscraper-building-cartoon-style-free-png.png", iconWidth = 20, iconHeight = 20)
+home <- makeIcon(iconUrl = "https://static.vecteezy.com/system/resources/previews/036/519/438/non_2x/ai-generated-cartoon-house-clipart-desigh-illustration-free-png.png", iconWidth = 20, iconHeight = 20)
+tent <- makeIcon(iconUrl = "https://freedesignfile.com/image/preview/8907/camping-tent-cartoon-clipart.png", iconWidth = 20, iconHeight = 20)
+density <- function(df, xCord, yCord, maxThreshold, minThreshold, hr, trailsDF, riverDF, icon1, icon2, icon3){
+  pts <- st_as_sf(df, coords = c(xCord, yCord), crs = 32718)
+  gridGeom <- st_make_grid(pts, cellsize = 150, square = TRUE)
+  grid <- st_sf(grid_id = 1:length(gridGeom), geometry = gridGeom)
+  ptsGrid <- st_join(pts, grid, join = st_within)
+  
+  gridCount <- ptsGrid |>
+    st_drop_geometry() |>
+    count(grid_id, name = "count")
+  
+  gridDens <- left_join(grid, gridCount, by = "grid_id") |>
+    mutate(count = replace_na(count, 0)) |>
+    mutate(class = case_when(
+      count >= maxThreshold ~ "skyscraper",
+      count < maxThreshold & count >= minThreshold ~ "home",
+      count < minThreshold ~ "tent"
+    )) |>
+    st_centroid() |>
+    st_transform(4326)
+  
+  gridDens <- cbind(gridDens, st_coordinates(gridDens))
+  
+  map <- leaflet() |>
+    addProviderTiles(providers$Esri.WorldTopoMap) |>
+    addPolygons(data = st_transform(hr, 4326), color = "tan4", weight = 2, fillOpacity = 0.3, group = "Home Range") |>
+    addPolylines(data = st_transform(trailsDF, 4326), color = "orange", weight = 2, group = "Trails") |>
+    addPolylines(data = st_transform(riverDF, 4326), color = "blue", weight = 2, group = "River") |>
+    addMarkers(data = filter(gridDens, class == "skyscraper"), lng = ~X, lat = ~Y, icon = icon1) |>
+    addMarkers(data = filter(gridDens, class == "home"), lng = ~X, lat = ~Y, icon = icon2) |>
+    addMarkers(data = filter(gridDens, class == "tent"), lng = ~X, lat = ~Y, icon = icon3) |>
+    addLayersControl(overlayGroups = c("Home Range", "Trails", "River"), options = layersControlOptions(collapsed = FALSE))
+  return(map)
+}
+
+dens14 <- density(df = d14, "mean_x_proj", "mean_y_proj", 30, 10, hr14$homerange, trails, river, icon1 = skyscraper, icon2 = home, icon3 = tent)  
+  
+  
+  
