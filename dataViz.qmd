@@ -17,7 +17,6 @@ First I loaded in the necessary packages and data. For data, I needed the list o
 #| message: false
 #| warning: false
 library(adehabitatHR)
-library(leafsync)
 library(leaflet)
 library(mapview)
 library(tidyverse)
@@ -157,8 +156,49 @@ evIcon <- function(evClipped, hr, icon1, icon2, icon3, trailsDF, riverDF, maxThr
 
 ## Location Density
 
-As a final method to visualize this data, I wanted to visualize point density across the home range from year to year. This follows a similar method to how I visualized elevation in each years homerange, except instead of trees, hills, and mountains, I used skyscrapers, houses, and tens to show the density of location points from each year. My thinking here was that higher point densities reflect where individual are spending most of there time and thus are more "populated", hence the use of these three icons
+As a final method to visualize this data, I wanted to visualize point density across the home range from year to year. This follows a similar method to how I visualized elevation in each years homerange, except instead of trees, hills, and mountains, I used skyscrapers, houses, and tens to show the density of location points from each year. My thinking here was that higher point densities reflect where individual are spending most of there time and thus are more "populated", hence the use of these three icons. The goal of this method of visualization was to show where the woolly monkeys are spending most of their day-to-day activity in a fun way using a human perspective of different things associated with different population densities.
 
 ```{r}
+skyscraper <- makeIcon(iconUrl = "https://static.vecteezy.com/system/resources/previews/039/143/409/non_2x/skyscraper-building-cartoon-style-free-png.png", iconWidth = 20, iconHeight = 20)
+home <- makeIcon(iconUrl = "https://static.vecteezy.com/system/resources/previews/036/519/438/non_2x/ai-generated-cartoon-house-clipart-desigh-illustration-free-png.png", iconWidth = 20, iconHeight = 20)
+tent <- makeIcon(iconUrl = "https://freedesignfile.com/image/preview/8907/camping-tent-cartoon-clipart.png", iconWidth = 20, iconHeight = 20)
+density <- function(df, xCord, yCord, maxThreshold, minThreshold, hr, trailsDF, riverDF, icon1, icon2, icon3){
+  pts <- st_as_sf(df, coords = c(xCord, yCord), crs = 32718)
+  gridGeom <- st_make_grid(pts, cellsize = 150, square = TRUE)
+  grid <- st_sf(grid_id = 1:length(gridGeom), geometry = gridGeom)
+  ptsGrid <- st_join(pts, grid, join = st_within)
+  
+  gridCount <- ptsGrid |>
+    st_drop_geometry() |>
+    count(grid_id, name = "count")
+  
+  gridDens <- left_join(grid, gridCount, by = "grid_id") |>
+    mutate(count = replace_na(count, 0)) |>
+    mutate(class = case_when(
+      count >= maxThreshold ~ "skyscraper",
+      count < maxThreshold & count >= minThreshold ~ "home",
+      count < minThreshold ~ "tent"
+    )) |>
+    st_centroid() |>
+    st_transform(4326)
+  
+  gridDens <- cbind(gridDens, st_coordinates(gridDens))
+  
+  map <- leaflet() |>
+    addProviderTiles(providers$Esri.WorldTopoMap) |>
+    addPolygons(data = st_transform(hr, 4326), color = "tan4", weight = 2, fillOpacity = 0.3, group = "Home Range") |>
+    addPolylines(data = st_transform(trailsDF, 4326), color = "orange", weight = 2, group = "Trails") |>
+    addPolylines(data = st_transform(riverDF, 4326), color = "blue", weight = 2, group = "River") |>
+    addMarkers(data = filter(gridDens, class == "skyscraper"), lng = ~X, lat = ~Y, icon = icon1) |>
+    addMarkers(data = filter(gridDens, class == "home"), lng = ~X, lat = ~Y, icon = icon2) |>
+    addMarkers(data = filter(gridDens, class == "tent"), lng = ~X, lat = ~Y, icon = icon3) |>
+    addLayersControl(overlayGroups = c("Home Range", "Trails", "River"), options = layersControlOptions(collapsed = FALSE))
+  return(map)
+}
 
+(dens14 <- density(df = d14, "mean_x_proj", "mean_y_proj", 80, 20, hr14$homerange, trails, river, icon1 = skyscraper, icon2 = home, icon3 = tent))
+(dens15 <- density(df = d15, "mean_x_proj", "mean_y_proj", 80, 20, hr15$homerange, trails, river, icon1 = skyscraper, icon2 = home, icon3 = tent))
+(dens16 <- density(df = d16, "mean_x_proj", "mean_y_proj", 80, 20, hr16$homerange, trails, river, icon1 = skyscraper, icon2 = home, icon3 = tent))
+(dens17 <- density(df = d17, "mean_x_proj", "mean_y_proj", 80, 20, hr17$homerange, trails, river, icon1 = skyscraper, icon2 = home, icon3 = tent))
+(dens18 <- density(df = d18, "mean_x_proj", "mean_y_proj", 80, 20, hr18$homerange, trails, river, icon1 = skyscraper, icon2 = home, icon3 = tent))
 ```

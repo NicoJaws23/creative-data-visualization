@@ -1,7 +1,6 @@
 #Data visualizations code
 library(adehabitatHR)
 library(leaflet)
-library(leafsync)
 library(mapview)
 library(tidyverse)
 library(sf)
@@ -48,12 +47,15 @@ viewHR <- function(df, trailsDF, riverDF, year, HRcolor, elevation = c("Y", "N")
 }
 
 hr14 <- viewHR(d14, trails, river, 2014, "tan4")
+hr14$map
 hr15 <- viewHR(d15, trails, river, 2015, "tan4")
+hr15$map
 hr16 <- viewHR(d16, trails, river, 2016, "tan4")
+hr16$map
 hr17 <- viewHR(d17, trails, river, 2017, "tan4")
+hr17$map
 hr18 <- viewHR(d18, trails, river, 2018, "tan4")
-hrFull <- viewHR(d, trails, river, "All Time", "tan4")
-sync(hr14$map, hr15$map, hr16$map, hr17$map, hr18$map, ncol = 1)
+hr18$map
 
 #Making elevation maps
 elev <- function(df, map, hr, res){
@@ -73,11 +75,15 @@ elev <- function(df, map, hr, res){
 }
 
 ev14 <- elev(d14, hr14$map, hr14$homerange, 150)
+ev14$evMap
 ev15 <- elev(d15, hr15$map, hr15$homerange, 150)
+ev15$evMap
 ev16 <- elev(d16, hr16$map, hr16$homerange, 150)
+ev16$evMap
 ev17 <- elev(d17, hr17$map, hr17$homerange, 150)
+ev17$evMap
 ev18 <- elev(d18, hr18$map, hr18$homerange, 150)
-sync(ev14$evMap, ev15$evMap, ev16$evMap, ev17$evMap, ev18$evMap, ncol = 1)
+ev18$evMap
 
 #Adding Icons
 mountain <- makeIcon(iconUrl = "https://www.pngmart.com/files/23/Cartoon-Mountains-PNG-Isolated-HD.png", iconWidth = 20, iconHeight = 20)
@@ -148,7 +154,11 @@ density <- function(df, xCord, yCord, maxThreshold, minThreshold, hr, trailsDF, 
   return(map)
 }
 
-dens14 <- density(df = d14, "mean_x_proj", "mean_y_proj", 30, 10, hr14$homerange, trails, river, icon1 = skyscraper, icon2 = home, icon3 = tent)  
-  
-  
-  
+(dens14 <- density(df = d14, "mean_x_proj", "mean_y_proj", 50, 10, hr14$homerange, trails, river, icon1 = skyscraper, icon2 = home, icon3 = tent))
+(dens15 <- density(df = d15, "mean_x_proj", "mean_y_proj", 50, 10, hr15$homerange, trails, river, icon1 = skyscraper, icon2 = home, icon3 = tent))
+(dens16 <- density(df = d16, "mean_x_proj", "mean_y_proj", 50, 10, hr16$homerange, trails, river, icon1 = skyscraper, icon2 = home, icon3 = tent))
+(dens17 <- density(df = d17, "mean_x_proj", "mean_y_proj", 50, 10, hr17$homerange, trails, river, icon1 = skyscraper, icon2 = home, icon3 = tent))
+(dens18 <- density(df = d18, "mean_x_proj", "mean_y_proj", 50, 10, hr18$homerange, trails, river, icon1 = skyscraper, icon2 = home, icon3 = tent))
+
+
+
