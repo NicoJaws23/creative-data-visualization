@@ -7,7 +7,7 @@ toc: true
 
 # Interactive View of Woolly Monkey Home Ranges
 
-For my data visualization project I used location data from Lagothrix Group D at the Tiputini Biodiversity Station to measure yearly changes in the group's homerange. Additionally, I added elevation layers based on point data and also location density of the group over the years 2014-2018.
+For my data visualization project I used location data from Lagothrix Group D at the Tiputini Biodiversity Station to measure yearly changes in the group's homerange. Additionally, I added elevation layers based on point data and also location density of the group over the years 2014-2018. The goal with this was to visualize density and elevation data in a unique way which could be understood by a younger audience and convey the data in a more approachable manner.
 
 ## Data Wrangling
 
