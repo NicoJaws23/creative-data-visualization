@@ -7,7 +7,7 @@ toc: true
 
 # Interactive View of Woolly Monkey Home Ranges
 
-For my data visualization project I used location data from Lagothrix Group D at the Tiputini Biodiversity Station to measure yearly changes in the group's homerange. Additionally, I added elevation layers based on point data and also location density of the group over the years 2014-2018. The goal with this was to visualize density and elevation data in a unique way which could be understood by a younger audience and convey the data in a more approachable manner.
+For my data visualization project I used location data from Lagothrix Group D at the Tiputini Biodiversity Station to measure yearly changes in the group's homerange. Additionally, I added elevation layers based on point data and also location density of the group over the years 2014-2018. I converted tiles of certain elevation and density values to correspond to different icons to visualize their value in a less than traditional fashion. The goal with this was to visualize density and elevation data in a unique way which could be understood by a younger audience and convey the data in a more approachable manner.
 
 ## Data Wrangling
 
@@ -85,7 +85,7 @@ hr18$map
 
 ## Adding Elevation
 
-Next, I calculated the elevation of the homerange. I first created a grid to act as the raster. The grid's resolution can be changed should a user use it, but I set it to 150 for this project. The function need the data-frame holding the elevation data, the map and homerange fature created in the previous function, and the desired resolution. The homerange feature will be used to clip the raster down so only grid squares within the homerange are visualized.
+Next, I calculated the elevation of the homerange. I first created a grid to act as the raster. The grid's resolution can be changed should a user use it, but I set it to 150 for this project. The function needs the data-frame holding the elevation data, the map and homerange feature created in the previous function, and the desired resolution. The homerange feature will be used to clip the raster down so only grid squares within the homerange are visualized.
 
 ```{r}
 #| message: false
@@ -156,7 +156,7 @@ evIcon <- function(evClipped, hr, icon1, icon2, icon3, trailsDF, riverDF, maxThr
 
 ## Location Density
 
-As a final method to visualize this data, I wanted to visualize point density across the home range from year to year. This follows a similar method to how I visualized elevation in each years homerange, except instead of trees, hills, and mountains, I used skyscrapers, houses, and tens to show the density of location points from each year. My thinking here was that higher point densities reflect where individual are spending most of there time and thus are more "populated", hence the use of these three icons. The goal of this method of visualization was to show where the woolly monkeys are spending most of their day-to-day activity in a fun way using a human perspective of different things associated with different population densities.
+As a final method to visualize this data, I wanted to visualize point density across the home range from year to year. This follows a similar method to how I visualized elevation in each years homerange, except instead of trees, hills, and mountains, I used skyscrapers, houses, and tens to show the density of location points from each year. My thinking here was that higher point densities reflect where individual are spending most of there time and thus are more "populated", hence the use of these three icons. The goal of this method of visualization was to show where the woolly monkeys are spending most of their day-to-day activity in a fun way using a human perspective of different things associated with different population densities. The function is of a similar structure to the elevation icon function, but this one creates an artificial grid containing the homerange and covers an area which contains all the points from each year. The cell size is 150 square meters which is then used to calculate the density of points in each cell across each year's given area.
 
 ```{r}
 skyscraper <- makeIcon(iconUrl = "https://static.vecteezy.com/system/resources/previews/039/143/409/non_2x/skyscraper-building-cartoon-style-free-png.png", iconWidth = 20, iconHeight = 20)
